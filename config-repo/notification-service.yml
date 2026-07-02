@@ -1,0 +1,25 @@
+server:
+  port: 8085
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+resend:
+  api-key: re_PYvRaT45_EFwWjdXH7XjVxksfgCy7pwYc
+  from-email: QuickEats <onboarding@resend.dev>
+  to-email: prabhu-ai-projects@hotmail.com
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

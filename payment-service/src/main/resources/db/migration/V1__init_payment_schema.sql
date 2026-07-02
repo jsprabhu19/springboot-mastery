@@ -1,0 +1,11 @@
+CREATE TABLE payments (
+    id BIGSERIAL PRIMARY KEY,
+    order_id VARCHAR(50) NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    razorpay_order_id VARCHAR(100),
+    razorpay_payment_id VARCHAR(100),
+    idempotency_key VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

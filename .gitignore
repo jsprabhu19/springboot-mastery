@@ -1,0 +1,37 @@
+# Maven build outputs
+**/target/
+target/
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE specific files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Log files
+*.log
+logs/
+**/logs/
+
+# Local / temporary tools files
+.gemini/
+.antigravityignore
+.agents/
+scratch/
