@@ -84,7 +84,9 @@ The platform comprises the following Spring Boot services (using **Java 21/25**,
 
 ## 🏁 Step-by-Step Boot Instructions
 
-### Step 1: Boot Backing Infrastructure
+### Option A: Run Backing Services in Docker & Microservices Locally
+
+#### Step 1: Boot Backing Infrastructure
 Make sure Docker Desktop is active. Run the following command from the root workspace directory to boot backing engines and observability servers:
 ```bash
 docker-compose up -d
@@ -98,13 +100,13 @@ Verify that all 8 containers are running and operational (`docker ps`):
 * `quickeats-prometheus` (Prometheus metrics scraper)
 * `quickeats-grafana` (Grafana dashboard metrics)
 
-### Step 2: Build Microservices
+#### Step 2: Build Microservices
 Use the Maven Wrapper script in the root directory to compile and package all modules:
 ```bash
 .\mvnw clean package -DskipTests
 ```
 
-### Step 3: Run the Microservices
+#### Step 3: Run the Microservices Locally
 Start the microservices in your IDE or terminal. For optimal startup, launch them in the following order:
 1. `discovery-server`
 2. `config-server` (wait for port `8888` to listen)
@@ -112,6 +114,40 @@ Start the microservices in your IDE or terminal. For optimal startup, launch the
 4. `user-service`, `restaurant-service`, `order-service`, `payment-service`, `notification-service`, `delivery-service`
 
 Verify that all services are registered successfully on the Eureka Dashboard: `http://localhost:8761`.
+
+---
+
+### Option B: Run the ENTIRE Platform (Including Microservices) inside Docker
+
+If you prefer to run both the backing services and all 9 Spring Boot microservices inside Docker:
+
+#### Step 1: Package the Microservices
+Build the `.jar` files on the host machine using Maven:
+```bash
+.\mvnw clean package -DskipTests
+```
+
+#### Step 2: Build and Run with Docker Compose
+Run the following command to build the microservice container images and start all services together:
+```bash
+docker-compose up --build -d
+```
+Docker Compose will coordinate the startup, waiting for backing databases to be healthy before booting the microservices in sequence.
+
+---
+
+## 🌐 Docker & Local Access URLs
+
+Regardless of whether you run the microservices locally or inside Docker, the ports are mapped to your host machine's loopback interface. You can access all system interfaces using the following URLs:
+
+| Service / Interface | Access URL (Host Browser) | Internal Docker Network URL | Description |
+| :--- | :--- | :--- | :--- |
+| **API Entrypoint** | `http://localhost:8080/api/v1/...` | `http://api-gateway:8080/api/v1/...` | Base path for all microservice REST APIs. |
+| **QuickEats Swagger UI** | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) | N/A | Interactive console to verify and test endpoints. |
+| **Eureka Registry** | [http://localhost:8761](http://localhost:8761) | `http://discovery-server:8761` | Service discovery control panel. |
+| **Zipkin Tracing** | [http://localhost:9411](http://localhost:9411) | `http://zipkin:9411` | Distributed trace query dashboard. |
+| **Prometheus Metrics** | [http://localhost:9090](http://localhost:9090) | `http://prometheus:9090` | Performance counters targets health. |
+| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | `http://grafana:3000` | JVM/System visualization dashboards (admin/admin). |
 
 ---
 
