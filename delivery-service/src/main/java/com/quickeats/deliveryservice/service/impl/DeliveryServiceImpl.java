@@ -18,6 +18,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final RestTemplate restTemplate;
 
     public DeliveryServiceImpl(DeliveryRepository deliveryRepository,
-                               RedisTemplate<String, String> redisTemplate,
+                               @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate,
                                SimpMessagingTemplate messagingTemplate,
                                RestTemplate restTemplate) {
         this.deliveryRepository = deliveryRepository;

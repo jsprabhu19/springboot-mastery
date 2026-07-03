@@ -15,6 +15,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - quickeats-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongodb:
     image: mongo:7.0
@@ -27,6 +32,11 @@ services:
       - mongodb_data:/data/db
     networks:
       - quickeats-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.2-alpine
@@ -37,6 +47,11 @@ services:
       - redis_data:/data
     networks:
       - quickeats-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -61,6 +76,11 @@ services:
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
     networks:
       - quickeats-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
 
   zipkin:
     image: openzipkin/zipkin
@@ -69,6 +89,11 @@ services:
       - "9411:9411"
     networks:
       - quickeats-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9411/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   prometheus:
     image: prom/prometheus:latest
@@ -91,6 +116,175 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
     networks:
       - quickeats-network
+
+  # 1. Discovery Server
+  discovery-server:
+    build: ./discovery-server
+    container_name: quickeats-discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - quickeats-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  # 2. Config Server
+  config-server:
+    build: ./config-server
+    container_name: quickeats-config-server
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./config-repo:/app/config-repo
+    networks:
+      - quickeats-network
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8888/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  # 3. API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: quickeats-api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # 4. User Service
+  user-service:
+    build: ./user-service
+    container_name: quickeats-user-service
+    ports:
+      - "8081:8081"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/quickeats_user"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # 5. Restaurant Service
+  restaurant-service:
+    build: ./restaurant-service
+    container_name: quickeats-restaurant-service
+    ports:
+      - "8082:8082"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_DATA_MONGODB_URI: "mongodb://mongodb:27017/quickeats_restaurant"
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # 6. Order Service
+  order-service:
+    build: ./order-service
+    container_name: quickeats-order-service
+    ports:
+      - "8083:8083"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/quickeats_order"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # 7. Payment Service
+  payment-service:
+    build: ./payment-service
+    container_name: quickeats-payment-service
+    ports:
+      - "8084:8084"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/quickeats_payment"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # 8. Notification Service
+  notification-service:
+    build: ./notification-service
+    container_name: quickeats-notification-service
+    ports:
+      - "8085:8085"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # 9. Delivery Service
+  delivery-service:
+    build: ./delivery-service
+    container_name: quickeats-delivery-service
+    ports:
+      - "8086:8086"
+    networks:
+      - quickeats-network
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/quickeats_delivery"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      config-server:
+        condition: service_healthy
 
 volumes:
   postgres_data:
