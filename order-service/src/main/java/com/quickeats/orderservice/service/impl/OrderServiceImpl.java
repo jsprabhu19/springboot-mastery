@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -29,12 +28,14 @@ public class OrderServiceImpl implements OrderService {
     private final OrderSagaOrchestrator sagaOrchestrator;
     private final OutboxService outboxService;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderSagaOrchestrator sagaOrchestrator, OutboxService outboxService) {
+    public OrderServiceImpl(OrderRepository orderRepository, OrderSagaOrchestrator sagaOrchestrator,
+            OutboxService outboxService) {
         this.orderRepository = orderRepository;
         this.sagaOrchestrator = sagaOrchestrator;
         this.outboxService = outboxService;
     }
 
+    @SuppressWarnings("null")
     @Override
     public OrderResponse createOrder(OrderRequest request, Long userId) {
         logger.info("Creating new order for User: {}, Restaurant: {}", userId, request.getRestaurantId());
@@ -42,7 +43,7 @@ public class OrderServiceImpl implements OrderService {
         // Calculate total amount
         BigDecimal total = request.getItems().stream()
                 .map(item -> item.getPrice().multiply(new BigDecimal(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         // 1. Create order skeleton in status CREATED
         Order order = new Order();
@@ -71,6 +72,7 @@ public class OrderServiceImpl implements OrderService {
         return mapToResponse(order);
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id) {
@@ -84,9 +86,10 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderResponse> getOrdersByUserId(Long userId) {
         return orderRepository.findByUserId(userId).stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional
     public OrderResponse cancelOrder(Long id, Long userId, String role) {
@@ -124,9 +127,8 @@ public class OrderServiceImpl implements OrderService {
                         item.getId(),
                         item.getName(),
                         item.getPrice(),
-                        item.getQuantity()
-                ))
-                .collect(Collectors.toList());
+                        item.getQuantity()))
+                .toList();
 
         return new OrderResponse(
                 order.getId(),
@@ -135,7 +137,6 @@ public class OrderServiceImpl implements OrderService {
                 order.getStatus(),
                 order.getTotalAmount(),
                 itemResponses,
-                order.getCreatedAt()
-        );
+                order.getCreatedAt());
     }
 }

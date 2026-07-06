@@ -8,6 +8,7 @@ import com.quickeats.deliveryservice.repository.DeliveryRepository;
 import com.quickeats.deliveryservice.service.DeliveryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,8 +29,7 @@ public class DeliveryController {
         deliveryService.registerActivePartner(
                 registration.getPartnerId(),
                 registration.getLatitude(),
-                registration.getLongitude()
-        );
+                registration.getLongitude());
     }
 
     @PostMapping("/{id}/location")
@@ -38,8 +38,7 @@ public class DeliveryController {
                 id,
                 update.getLatitude(),
                 update.getLongitude(),
-                update.getStatus()
-        );
+                update.getStatus());
     }
 
     @PostMapping("/{id}/complete")
@@ -48,7 +47,7 @@ public class DeliveryController {
     }
 
     @GetMapping("/{id}")
-    public DeliveryResponse getDeliveryById(@PathVariable("id") Long id) {
+    public DeliveryResponse getDeliveryById(@PathVariable("id") @NonNull Long id) {
         Delivery delivery = deliveryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Delivery not found with ID: " + id));
         return mapToResponse(delivery);
@@ -69,7 +68,6 @@ public class DeliveryController {
                 delivery.getStatus(),
                 delivery.getTotalAmount(),
                 delivery.getCreatedAt(),
-                delivery.getUpdatedAt()
-        );
+                delivery.getUpdatedAt());
     }
 }

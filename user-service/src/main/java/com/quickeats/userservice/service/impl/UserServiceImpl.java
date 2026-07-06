@@ -15,7 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service implementation containing database access coordination and validation logic.
+ * Service implementation containing database access coordination and validation
+ * logic.
  * Employs constructor injection for required encoders and utilities.
  */
 @Service
@@ -32,6 +33,7 @@ public class UserServiceImpl implements UserService {
         this.jwtUtil = jwtUtil;
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -75,6 +77,7 @@ public class UserServiceImpl implements UserService {
         return UserResponse.fromEntity(user);
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {

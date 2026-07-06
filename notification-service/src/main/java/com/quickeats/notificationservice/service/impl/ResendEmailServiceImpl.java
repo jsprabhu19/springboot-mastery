@@ -60,7 +60,8 @@ public class ResendEmailServiceImpl implements EmailService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
         try {
-            Map<?, ?> response = restTemplate.postForObject(resendUrl, request, Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.postForObject(resendUrl, request, Map.class);
             if (response != null && response.containsKey("id")) {
                 logger.info("Email dispatched successfully! Resend Notification ID: {}", response.get("id"));
             } else {

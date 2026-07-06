@@ -36,9 +36,9 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final RestTemplate restTemplate;
 
     public DeliveryServiceImpl(DeliveryRepository deliveryRepository,
-                               @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate,
-                               SimpMessagingTemplate messagingTemplate,
-                               RestTemplate restTemplate) {
+            @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate,
+            SimpMessagingTemplate messagingTemplate,
+            RestTemplate restTemplate) {
         this.deliveryRepository = deliveryRepository;
         this.redisTemplate = redisTemplate;
         this.messagingTemplate = messagingTemplate;
@@ -54,7 +54,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         String restaurantUrl = "http://restaurant-service/api/v1/restaurants/" + restaurantId;
         double restaurantLng = 77.5946; // Fallback longitude
         double restaurantLat = 12.9716; // Fallback latitude
-        
+
         try {
             RestaurantResponse restaurant = restTemplate.getForObject(restaurantUrl, RestaurantResponse.class);
             if (restaurant != null && restaurant.getLocation() != null && restaurant.getLocation().length >= 2) {
@@ -65,7 +65,9 @@ public class DeliveryServiceImpl implements DeliveryService {
                 logger.warn("Restaurant or restaurant location was null. Using fallback coordinates.");
             }
         } catch (Exception e) {
-            logger.error("Failed to fetch restaurant location from restaurant-service. Using fallback coordinates. Error: {}", e.getMessage());
+            logger.error(
+                    "Failed to fetch restaurant location from restaurant-service. Using fallback coordinates. Error: {}",
+                    e.getMessage());
         }
 
         // 2. Query Redis Geo Set for the nearest active partner within 5km
@@ -108,6 +110,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         return delivery;
     }
 
+    @SuppressWarnings("null")
     @Override
     public void registerActivePartner(String partnerId, double latitude, double longitude) {
         logger.info("Registering/Updating active partner: {} at [lat: {}, lng: {}]", partnerId, latitude, longitude);
@@ -118,8 +121,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     @Transactional
     public void updateLocation(Long deliveryId, double latitude, double longitude, String status) {
-        logger.info("Updating location for delivery ID: {} to [lat: {}, lng: {}], status: {}", deliveryId, latitude, longitude, status);
-        
+        logger.info("Updating location for delivery ID: {} to [lat: {}, lng: {}], status: {}", deliveryId, latitude,
+                longitude, status);
+
+        @SuppressWarnings("null")
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new RuntimeException("Delivery not found with ID: " + deliveryId));
 
@@ -140,17 +145,20 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Transactional
     public void completeDelivery(Long deliveryId) {
         logger.info("Completing delivery run for ID: {}", deliveryId);
-        
+
+        @SuppressWarnings("null")
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new RuntimeException("Delivery not found with ID: " + deliveryId));
 
         delivery.setStatus(DeliveryStatus.DELIVERED);
         delivery = deliveryRepository.save(delivery);
 
-        // Broadcast complete status to STOMP subscribers (we can pass 0,0 or last known coordinates if we had them)
+        // Broadcast complete status to STOMP subscribers (we can pass 0,0 or last known
+        // coordinates if we had them)
         broadcastLocationUpdate(delivery, 0.0, 0.0);
     }
 
+    @SuppressWarnings("null")
     private void broadcastLocationUpdate(Delivery delivery, double latitude, double longitude) {
         String destination = "/topic/delivery/" + delivery.getOrderId();
         Map<String, Object> payload = Map.of(
@@ -160,8 +168,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                 "status", delivery.getStatus().name(),
                 "latitude", latitude,
                 "longitude", longitude,
-                "timestamp", LocalDateTime.now().toString()
-        );
+                "timestamp", LocalDateTime.now().toString());
         logger.info("Broadcasting location/status update to STOMP destination {}: {}", destination, payload);
         messagingTemplate.convertAndSend(destination, payload);
     }

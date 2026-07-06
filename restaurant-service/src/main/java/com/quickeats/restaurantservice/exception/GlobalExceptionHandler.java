@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @SuppressWarnings("null")
     @ExceptionHandler(RestaurantException.class)
     public ResponseEntity<ErrorResponse> handleRestaurantException(RestaurantException ex, WebRequest request) {
         logger.warn("Restaurant rule validation failed: {}", ex.getMessage());
@@ -31,13 +32,14 @@ public class GlobalExceptionHandler {
                 ex.getStatus().value(),
                 ex.getStatus().getReasonPhrase(),
                 ex.getMessage(),
-                getPath(request)
-        );
+                getPath(request));
         return new ResponseEntity<>(errorResponse, ex.getStatus());
     }
 
+    @SuppressWarnings("null")
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, WebRequest request) {
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex,
+            WebRequest request) {
         String validationErrors = ex.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
@@ -49,8 +51,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 validationErrors,
-                getPath(request)
-        );
+                getPath(request));
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
@@ -62,14 +63,13 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                 "An unexpected internal error occurred",
-                getPath(request)
-        );
+                getPath(request));
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private String getPath(WebRequest request) {
-        if (request instanceof ServletWebRequest) {
-            return ((ServletWebRequest) request).getRequest().getRequestURI();
+        if (request instanceof ServletWebRequest servletWebRequest) {
+            return servletWebRequest.getRequest().getRequestURI();
         }
         return request.getContextPath();
     }

@@ -12,20 +12,25 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import java.time.Duration;
 
 /**
- * Redis configuration class defining a JSON-based serialization strategy for cached values.
- * Replaces default JdkSerializationRedisSerializer to make keys/values human-readable
+ * Redis configuration class defining a JSON-based serialization strategy for
+ * cached values.
+ * Replaces default JdkSerializationRedisSerializer to make keys/values
+ * human-readable
  * and prevent binary serialization failures on complex types.
  */
 @Configuration
 public class RedisConfig {
 
+    @SuppressWarnings("null")
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         // Setup JSON value serializer and string key serializer
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10)) // Cache TTL of 10 minutes
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new GenericJackson2JsonRedisSerializer()))
                 .disableCachingNullValues();
 
         return RedisCacheManager.builder(connectionFactory)

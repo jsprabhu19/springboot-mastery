@@ -28,6 +28,7 @@ public class OutboxServiceImpl implements OutboxService {
         this.objectMapper = new ObjectMapper();
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void saveOrderEvent(Order order, String eventType) {

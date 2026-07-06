@@ -44,7 +44,9 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
-            logger.debug(String.format("Loaded auth context from gateway headers. User: %s, Role: %s, ID: %s", username, role, userId));
+            if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Loaded auth context from gateway headers. User: %s, Role: %s, ID: %s", username, role, userId));
+            }
         }
 
         filterChain.doFilter(request, response);

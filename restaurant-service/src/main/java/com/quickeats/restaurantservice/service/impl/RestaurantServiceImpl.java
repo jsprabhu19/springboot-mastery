@@ -13,10 +13,8 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of RestaurantService.
@@ -32,6 +30,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         this.restaurantRepository = restaurantRepository;
     }
 
+    @SuppressWarnings("null")
     @Override
     public Restaurant createRestaurant(RestaurantRequest request) {
         List<MenuItem> items = request.getMenuItems().stream()
@@ -40,9 +39,8 @@ public class RestaurantServiceImpl implements RestaurantService {
                         item.getName(),
                         item.getDescription(),
                         item.getPrice(),
-                        item.isAvailable()
-                ))
-                .collect(Collectors.toList());
+                        item.isAvailable()))
+                .toList();
 
         Restaurant restaurant = Restaurant.builder()
                 .name(request.getName())
@@ -55,6 +53,7 @@ public class RestaurantServiceImpl implements RestaurantService {
         return restaurantRepository.save(restaurant);
     }
 
+    @SuppressWarnings("null")
     @Override
     @Cacheable(value = "restaurants", key = "#p0")
     public Restaurant getRestaurantById(String id) {
@@ -71,10 +70,11 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     @Caching(evict = {
-        @CacheEvict(value = "restaurants", key = "#p0"),
-        @CacheEvict(value = "menus", key = "#p0")
+            @CacheEvict(value = "restaurants", key = "#p0"),
+            @CacheEvict(value = "menus", key = "#p0")
     })
     public Restaurant addMenuItem(String restaurantId, MenuItemRequest request) {
+        @SuppressWarnings("null")
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new RestaurantException("Restaurant not found", HttpStatus.NOT_FOUND));
 
@@ -83,8 +83,7 @@ public class RestaurantServiceImpl implements RestaurantService {
                 request.getName(),
                 request.getDescription(),
                 request.getPrice(),
-                request.isAvailable()
-        );
+                request.isAvailable());
 
         restaurant.getMenuItems().add(newItem);
         return restaurantRepository.save(restaurant);
@@ -92,10 +91,11 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     @Caching(evict = {
-        @CacheEvict(value = "restaurants", key = "#p0"),
-        @CacheEvict(value = "menus", key = "#p0")
+            @CacheEvict(value = "restaurants", key = "#p0"),
+            @CacheEvict(value = "menus", key = "#p0")
     })
     public Restaurant updateMenuItem(String restaurantId, String itemId, MenuItemRequest request) {
+        @SuppressWarnings("null")
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new RestaurantException("Restaurant not found", HttpStatus.NOT_FOUND));
 
@@ -114,10 +114,11 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     @Caching(evict = {
-        @CacheEvict(value = "restaurants", key = "#p0"),
-        @CacheEvict(value = "menus", key = "#p0")
+            @CacheEvict(value = "restaurants", key = "#p0"),
+            @CacheEvict(value = "menus", key = "#p0")
     })
     public Restaurant deleteMenuItem(String restaurantId, String itemId) {
+        @SuppressWarnings("null")
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new RestaurantException("Restaurant not found", HttpStatus.NOT_FOUND));
 
